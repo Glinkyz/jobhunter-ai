@@ -1,0 +1,26 @@
+name: jobhunter_app
+description: "JobHunter AI - Intelligent Job Aggregator, ATS Personal CRM & AI Matching Engine"
+publish_to: "none"
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.2.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_riverpod: ^2.5.1
+  go_router: ^14.2.0
+  dio: ^5.4.3+1
+  uuid: ^4.4.0
+  intl: ^0.19.0
+  google_fonts: ^6.2.1
+  flutter_secure_storage: ^9.2.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
