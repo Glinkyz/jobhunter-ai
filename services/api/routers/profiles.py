@@ -45,3 +45,14 @@ def get_profile(profile_id: str, db: Session = Depends(get_db)):
     if not profile:
         raise HTTPException(status_code=404, detail="Perfil no encontrado")
     return profile
+
+
+@router.delete("/{profile_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_profile(profile_id: str, db: Session = Depends(get_db)):
+    profile = db.query(Profile).filter(Profile.id == profile_id).first()
+    if not profile:
+        raise HTTPException(status_code=404, detail="Perfil no encontrado")
+
+    db.delete(profile)
+    db.commit()
+    return None
