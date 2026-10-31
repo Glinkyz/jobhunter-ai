@@ -1,25 +1,68 @@
 import hashlib
+import logging
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 from services.db.database import get_db
 from services.db.models import Job
 from services.api.schemas import JobCreate, JobResponse
+from services.api.routers.scrapers import scraper_mgr
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/jobs", tags=["Jobs"])
 
 
 @router.get("", response_model=List[JobResponse])
-def search_jobs(
+async def search_jobs(
     q: Optional[str] = Query(None, description="Búsqueda por título o palabras clave"),
     location: Optional[str] = Query(None, description="Filtro de localización o provincia"),
     modality: Optional[str] = Query(None, description="REMOTE, HYBRID, ONSITE"),
     min_salary: Optional[float] = Query(None, description="Salario mínimo anual deseado"),
-    source: Optional[str] = Query(None, description="Portal de origen (InfoJobs, SEPE, etc.)"),
+    source: Optional[str] = Query(None, description="Portal de origen (InfoJobs, SEPE, Remotive, etc.)"),
+    live: bool = Query(True, description="Ejecutar búsqueda en vivo en agregadores y conectores"),
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
     db: Session = Depends(get_db)
 ):
+    # Si la búsqueda es en vivo y se proporcionan términos o se solicita explícitamente, scrapeamos en tiempo real
+    if live and (q or location):
+        try:
+            raw_offers = await scraper_mgr.scrape_all(
+                query=q or "",
+                location=location or "",
+                limit=10
+            )
+            persisted = 0
+            for r in raw_offers:
+                existing = db.query(Job).filter(Job.content_hash == r.content_hash).first()
+                if not existing:
+                    job = Job(
+                        title=r.title,
+                        company=r.company,
+                        location=r.location,
+                        modality=r.modality,
+                        contract_type=r.contract_type,
+                        salary_min=r.salary_min,
+                        salary_max=r.salary_max,
+                        currency=r.currency,
+                        experience_required_years=r.experience_required_years,
+                        required_skills=r.required_skills,
+                        nice_to_have_skills=r.nice_to_have_skills,
+                        description=r.description,
+                        source=r.source,
+                        source_url=r.source_url,
+                        external_id=r.external_id,
+                        content_hash=r.content_hash,
+                        published_at=r.published_at
+                    )
+                    db.add(job)
+                    persisted += 1
+            if persisted > 0:
+                db.commit()
+        except Exception as e:
+            logger.warning(f"Error during live search scraping: {e}")
+
     query = db.query(Job).filter(Job.is_active == True)
 
     if q:
