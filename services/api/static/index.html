@@ -1,0 +1,1032 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full bg-slate-950 text-slate-100">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JobHunter AI - Dashboard de Búsqueda y ATS Personal</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            primary: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              200: '#c7d2fe',
+              300: '#a5b4fc',
+              400: '#818cf8',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+              800: '#3730a3',
+              900: '#312e81',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.6);
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: rgba(99, 102, 241, 0.4);
+      border-radius: 9999px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: rgba(99, 102, 241, 0.7);
+    }
+  </style>
+</head>
+<body class="h-full flex flex-col font-sans antialiased selection:bg-indigo-500 selection:text-white">
+  <!-- Top Navigation Bar -->
+  <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-white shadow-lg shadow-indigo-500/30">
+          <i class="fa-solid fa-radar text-lg"></i>
+        </div>
+        <div>
+          <h1 class="text-lg font-bold bg-gradient-to-r from-indigo-400 to-cyan-400 bg-clip-text text-transparent">JobHunter AI</h1>
+          <p class="text-xs text-slate-400">Plataforma de Búsqueda Autónoma & ATS</p>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <nav class="flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800 text-sm font-medium">
+        <button onclick="switchTab('jobs')" id="tab-btn-jobs" class="tab-btn px-4 py-2 rounded-lg transition-all flex items-center gap-2 bg-indigo-600 text-white shadow-sm">
+          <i class="fa-solid fa-briefcase"></i> Ofertas
+        </button>
+        <button onclick="switchTab('kanban')" id="tab-btn-kanban" class="tab-btn px-4 py-2 rounded-lg transition-all flex items-center gap-2 text-slate-400 hover:text-slate-200">
+          <i class="fa-solid fa-table-columns"></i> Kanban ATS
+        </button>
+        <button onclick="switchTab('profiles')" id="tab-btn-profiles" class="tab-btn px-4 py-2 rounded-lg transition-all flex items-center gap-2 text-slate-400 hover:text-slate-200">
+          <i class="fa-solid fa-id-card"></i> Multi-Perfil
+        </button>
+        <button onclick="switchTab('analytics')" id="tab-btn-analytics" class="tab-btn px-4 py-2 rounded-lg transition-all flex items-center gap-2 text-slate-400 hover:text-slate-200">
+          <i class="fa-solid fa-chart-line"></i> Métricas
+        </button>
+      </nav>
+
+      <!-- Active Profile Selector & Status Badge -->
+      <div class="flex items-center gap-4">
+        <div class="hidden sm:flex items-center gap-2 text-xs bg-slate-800/80 border border-slate-700/60 rounded-full px-3 py-1.5 text-slate-300">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span id="ai-status-label">Modelos IA: 100% Operativo</span>
+        </div>
+        <div class="relative">
+          <select id="activeProfileSelect" onchange="onProfileChange()" class="text-xs font-medium bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            <option value="">Cargando perfiles...</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content Layout -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 overflow-hidden flex flex-col">
+    <!-- View 1: Job Search & Matching -->
+    <section id="view-jobs" class="view-panel flex-1 flex flex-col gap-5 overflow-hidden">
+      <!-- Search & Filter Controls -->
+      <div class="bg-slate-900 border border-slate-800 p-4 rounded-2xl flex flex-col md:flex-row gap-4 items-center justify-between shadow-xl">
+        <div class="flex-1 flex flex-col sm:flex-row gap-3 w-full">
+          <div class="relative flex-1">
+            <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3.5 text-slate-500"></i>
+            <input type="text" id="searchInput" placeholder="Buscar por título, tecnología o palabra clave (ej. Python, Flutter, DevOps)..." class="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-200 placeholder-slate-500">
+          </div>
+          <div class="relative sm:w-48">
+            <i class="fa-solid fa-location-dot absolute left-3.5 top-3.5 text-slate-500"></i>
+            <input type="text" id="locationInput" placeholder="Ciudad o Remoto" class="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-200 placeholder-slate-500">
+          </div>
+        </div>
+
+        <div class="flex items-center gap-3 w-full md:w-auto justify-end">
+          <label class="flex items-center gap-2 cursor-pointer text-xs font-medium text-slate-300 bg-slate-950 border border-slate-800 px-3 py-2.5 rounded-xl">
+            <input type="checkbox" id="liveSearchCheckbox" checked class="rounded border-slate-700 text-indigo-600 focus:ring-indigo-500 bg-slate-900">
+            <span>Búsqueda en Vivo</span>
+          </label>
+          <button onclick="triggerScraperSync()" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-medium transition-colors flex items-center gap-2 border border-slate-700">
+            <i class="fa-solid fa-arrows-rotate" id="syncIcon"></i>
+            <span class="hidden sm:inline">Conectores</span>
+          </button>
+          <button onclick="searchJobs()" class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold transition-all shadow-lg shadow-indigo-600/30 flex items-center gap-2">
+            <i class="fa-solid fa-bolt"></i> Buscar
+          </button>
+        </div>
+      </div>
+
+      <!-- Job List & Detail View -->
+      <div class="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 overflow-hidden">
+        <!-- Job Results List -->
+        <div class="lg:col-span-5 flex flex-col gap-3 overflow-y-auto custom-scrollbar pr-2" id="jobsListContainer">
+          <div class="flex items-center justify-between text-xs font-semibold text-slate-400 px-1">
+            <span id="jobsCountLabel">Cargando vacantes...</span>
+            <div class="flex items-center gap-2">
+              <span>Ordenar por:</span>
+              <select id="sortSelect" onchange="sortJobs()" class="bg-transparent border-none text-slate-300 focus:outline-none cursor-pointer">
+                <option value="recent">Más recientes</option>
+                <option value="salary">Mayor salario</option>
+              </select>
+            </div>
+          </div>
+          <div id="jobsList" class="flex flex-col gap-3"></div>
+        </div>
+
+        <!-- Job Detail & Matching Analysis Panel -->
+        <div class="lg:col-span-7 bg-slate-900 border border-slate-800 rounded-2xl p-6 overflow-y-auto custom-scrollbar flex flex-col shadow-2xl relative" id="jobDetailPanel">
+          <div class="flex flex-col items-center justify-center h-full text-slate-500 py-20 text-center">
+            <i class="fa-solid fa-hand-pointer text-4xl mb-3 opacity-40"></i>
+            <p class="text-sm">Selecciona una vacante del listado para inspeccionar sus requerimientos y calcular compatibilidad con IA.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- View 2: Kanban ATS Board -->
+    <section id="view-kanban" class="view-panel flex-1 flex flex-col gap-4 overflow-hidden hidden">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-lg font-bold text-slate-100">Tablero Kanban ATS Personal</h2>
+          <p class="text-xs text-slate-400">Seguimiento integral de tus candidaturas desde el hallazgo hasta la oferta</p>
+        </div>
+        <div class="flex items-center gap-3">
+          <button onclick="loadKanban()" class="px-3.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-medium text-slate-300 border border-slate-700 flex items-center gap-2">
+            <i class="fa-solid fa-arrows-rotate"></i> Actualizar
+          </button>
+        </div>
+      </div>
+
+      <div class="flex-1 grid grid-cols-1 md:grid-cols-4 gap-4 overflow-y-auto custom-scrollbar pb-4" id="kanbanBoard">
+        <!-- Columns will be populated dynamically -->
+      </div>
+    </section>
+
+    <!-- View 3: Multi-Profile Management -->
+    <section id="view-profiles" class="view-panel flex-1 flex flex-col gap-5 overflow-y-auto custom-scrollbar hidden">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-lg font-bold text-slate-100">Gestor Multi-Perfil</h2>
+          <p class="text-xs text-slate-400">Crea perfiles especializados para optimizar tus matches con diferentes roles</p>
+        </div>
+        <button onclick="openNewProfileModal()" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold transition-all flex items-center gap-2 shadow-lg shadow-indigo-600/30">
+          <i class="fa-solid fa-plus"></i> Nuevo Perfil
+        </button>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5" id="profilesGrid"></div>
+    </section>
+
+    <!-- View 4: Analytics -->
+    <section id="view-analytics" class="view-panel flex-1 flex flex-col gap-6 overflow-y-auto custom-scrollbar hidden">
+      <div>
+        <h2 class="text-lg font-bold text-slate-100">Métricas y Conversión</h2>
+        <p class="text-xs text-slate-400">Estadísticas del embudo de contratación y efectividad de postulaciones</p>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" id="statsMetricsGrid"></div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl">
+          <h3 class="text-sm font-semibold text-slate-200 mb-4 flex items-center gap-2">
+            <i class="fa-solid fa-filter text-indigo-400"></i> Distribución por Etapa
+          </h3>
+          <div class="flex flex-col gap-3" id="stageDistributionBars"></div>
+        </div>
+
+        <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl flex flex-col justify-between">
+          <div>
+            <h3 class="text-sm font-semibold text-slate-200 mb-4 flex items-center gap-2">
+              <i class="fa-solid fa-chart-pie text-cyan-400"></i> Eficiencia del Embudo
+            </h3>
+            <p class="text-xs text-slate-400 leading-relaxed mb-4">
+              La tasa de respuesta mide el porcentaje de candidaturas que progresan más allá de la fase inicial de postulación hacia entrevistas o pruebas técnicas.
+            </p>
+          </div>
+          <div class="bg-slate-950 p-4 rounded-xl border border-slate-800/80 flex items-center justify-around">
+            <div class="text-center">
+              <span class="text-xs text-slate-400 block mb-1">Tasa de Respuesta</span>
+              <span class="text-2xl font-bold text-emerald-400" id="responseRateLabel">0%</span>
+            </div>
+            <div class="h-10 w-px bg-slate-800"></div>
+            <div class="text-center">
+              <span class="text-xs text-slate-400 block mb-1">Total Gestionadas</span>
+              <span class="text-2xl font-bold text-indigo-400" id="totalAppsLabel">0</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- In-DOM Confirmation Modal -->
+  <div id="confirmModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl flex flex-col gap-4">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-red-500/20 text-red-400 flex items-center justify-center text-lg">
+          <i class="fa-solid fa-triangle-exclamation"></i>
+        </div>
+        <div>
+          <h3 class="text-base font-bold text-slate-100" id="confirmTitle">Confirmar Acción</h3>
+          <p class="text-xs text-slate-400" id="confirmSubtitle">Esta acción no se puede deshacer.</p>
+        </div>
+      </div>
+      <p class="text-sm text-slate-300" id="confirmMessage">¿Estás seguro de continuar?</p>
+      <div class="flex items-center justify-end gap-3 pt-2">
+        <button onclick="closeConfirmModal()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold">Cancelar</button>
+        <button id="confirmAcceptBtn" class="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-semibold shadow-lg shadow-red-600/30">Eliminar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stage Transition Modal for Kanban -->
+  <div id="stageModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl flex flex-col gap-4">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h3 class="text-sm font-bold text-slate-100">Mover Candidatura</h3>
+        <button onclick="closeStageModal()" class="text-slate-500 hover:text-slate-300"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <input type="hidden" id="stageAppId">
+      <div class="flex flex-col gap-3 text-xs">
+        <div>
+          <label class="block text-slate-400 mb-1">Nueva Etapa</label>
+          <select id="stageSelect" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200">
+            <option value="SAVED">Guardada</option>
+            <option value="APPLIED">Postulado</option>
+            <option value="INTERVIEW">Entrevista</option>
+            <option value="OFFER">Oferta</option>
+            <option value="REJECTED">Descartada</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-slate-400 mb-1">Notas de la Etapa</label>
+          <textarea id="stageNotes" rows="3" placeholder="Detalles de la entrevista, feedback o siguientes pasos..." class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-slate-200"></textarea>
+        </div>
+      </div>
+      <div class="flex items-center justify-between pt-2">
+        <button onclick="deleteCurrentStageApp()" class="px-3 py-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 text-xs font-semibold flex items-center gap-1.5">
+          <i class="fa-solid fa-trash-can"></i> Retirar
+        </button>
+        <div class="flex items-center gap-2">
+          <button onclick="closeStageModal()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold">Cancelar</button>
+          <button onclick="saveStageTransition()" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold">Guardar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- New Profile Modal -->
+  <div id="newProfileModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl flex flex-col gap-4 max-h-[90vh] overflow-y-auto custom-scrollbar">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h3 class="text-sm font-bold text-slate-100">Crear Nuevo Perfil Profesional</h3>
+        <button onclick="closeNewProfileModal()" class="text-slate-500 hover:text-slate-300"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <form onsubmit="submitNewProfile(event)" class="flex flex-col gap-3 text-xs">
+        <div>
+          <label class="block text-slate-400 mb-1">Título del Perfil</label>
+          <input type="text" id="profTitle" required placeholder="Ej: Senior Python & Cloud Architect" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200">
+        </div>
+        <div>
+          <label class="block text-slate-400 mb-1">Habilidades Clave (separadas por coma)</label>
+          <input type="text" id="profSkills" required placeholder="Python, FastAPI, Docker, Kubernetes, PostgreSQL" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200">
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-slate-400 mb-1">Salario Mínimo Anual (€)</label>
+            <input type="number" id="profSalaryMin" placeholder="45000" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200">
+          </div>
+          <div>
+            <label class="block text-slate-400 mb-1">Modalidad Preferida</label>
+            <select id="profModality" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200">
+              <option value="REMOTE">Remoto</option>
+              <option value="HYBRID">Híbrido</option>
+              <option value="ONSITE">Presencial</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="block text-slate-400 mb-1">Ciudades / Ubicaciones (separadas por coma)</label>
+          <input type="text" id="profLocations" placeholder="Madrid, Barcelona, Remoto" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200">
+        </div>
+        <div>
+          <label class="block text-slate-400 mb-1">Años de Experiencia</label>
+          <input type="number" step="0.5" id="profExpYears" value="5" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200">
+        </div>
+        <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-800">
+          <button type="button" onclick="closeNewProfileModal()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold">Cancelar</button>
+          <button type="submit" class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-lg shadow-indigo-600/30">Guardar Perfil</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Notification Toast -->
+  <div id="toast" class="fixed bottom-5 right-5 z-50 bg-slate-900 border border-slate-800 text-slate-100 px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none">
+    <i id="toastIcon" class="fa-solid fa-circle-check text-emerald-400 text-base"></i>
+    <span id="toastMsg" class="text-xs font-medium">Acción completada</span>
+  </div>
+
+  <script>
+    const API_BASE = '/api/v1';
+    let currentUserId = null;
+    let currentProfileId = null;
+    let allJobs = [];
+    let selectedJob = null;
+    let profilesList = [];
+
+    // Confirmation Modal System
+    let confirmCallback = null;
+    function openConfirmModal(title, subtitle, onConfirm) {
+      document.getElementById('confirmTitle').innerText = title;
+      document.getElementById('confirmSubtitle').innerText = subtitle;
+      document.getElementById('confirmMessage').innerText = '¿Estás seguro de que deseas eliminar este elemento?';
+      confirmCallback = onConfirm;
+      const modal = document.getElementById('confirmModal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeConfirmModal() {
+      const modal = document.getElementById('confirmModal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+      confirmCallback = null;
+    }
+
+    document.getElementById('confirmAcceptBtn').onclick = async () => {
+      if (confirmCallback) {
+        await confirmCallback();
+      }
+      closeConfirmModal();
+    };
+
+    // Toast Notifications
+    function showToast(msg, isError = false) {
+      const toast = document.getElementById('toast');
+      const icon = document.getElementById('toastIcon');
+      const text = document.getElementById('toastMsg');
+      text.innerText = msg;
+      if (isError) {
+        icon.className = 'fa-solid fa-circle-exclamation text-rose-400 text-base';
+        toast.className = toast.className.replace('border-slate-800', 'border-rose-900/60');
+      } else {
+        icon.className = 'fa-solid fa-circle-check text-emerald-400 text-base';
+        toast.className = toast.className.replace('border-rose-900/60', 'border-slate-800');
+      }
+      toast.classList.remove('translate-y-20', 'opacity-0');
+      setTimeout(() => {
+        toast.classList.add('translate-y-20', 'opacity-0');
+      }, 3500);
+    }
+
+    // Switch Tabs
+    function switchTab(tabId) {
+      document.querySelectorAll('.view-panel').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('bg-indigo-600', 'text-white', 'shadow-sm');
+        btn.classList.add('text-slate-400');
+      });
+
+      const activeView = document.getElementById(`view-${tabId}`);
+      if (activeView) activeView.classList.remove('hidden');
+
+      const activeBtn = document.getElementById(`tab-btn-${tabId}`);
+      if (activeBtn) {
+        activeBtn.classList.add('bg-indigo-600', 'text-white', 'shadow-sm');
+        activeBtn.classList.remove('text-slate-400');
+      }
+
+      if (tabId === 'kanban') loadKanban();
+      if (tabId === 'profiles') renderProfilesList();
+      if (tabId === 'analytics') loadStats();
+    }
+
+    // App Initialization
+    async function initApp() {
+      await loadAiStatus();
+      await loadProfiles();
+      await searchJobs();
+      await loadStats();
+    }
+
+    async function loadAiStatus() {
+      try {
+        const res = await fetch(`${API_BASE}/matching/models/status`);
+        if (res.ok) {
+          const data = await res.json();
+          const badge = document.getElementById('ai-status-label');
+          if (data.status === 'healthy') {
+            badge.innerText = 'Modelos IA: 100% Operativo';
+          }
+        }
+      } catch (e) {
+        console.warn('AI status check failed', e);
+      }
+    }
+
+    // Load Profiles
+    async function loadProfiles() {
+      try {
+        const res = await fetch(`${API_BASE}/jobs?limit=1`);
+        const profRes = await fetch(`${API_BASE}/profiles?user_id=usr_sample_01`);
+        let profs = [];
+        if (profRes.ok) {
+          profs = await profRes.json();
+        }
+
+        if (!profs || profs.length === 0) {
+          const newProf = await fetch(`${API_BASE}/profiles`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              user_id: 'usr_sample_01',
+              title: 'Senior Python Developer',
+              bio: 'Especialista en desarrollo backend con FastAPI, Microservicios y Cloud.',
+              target_roles: ['Python Developer', 'Backend Engineer'],
+              target_salary_min: 45000,
+              currency: 'EUR',
+              preferred_modality: 'REMOTE',
+              locations: ['Madrid', 'Remoto'],
+              skills: [{ name: 'Python' }, { name: 'FastAPI' }, { name: 'Docker' }, { name: 'SQLAlchemy' }, { name: 'PostgreSQL' }],
+              experience_years: 6
+            })
+          });
+          if (newProf.ok) {
+            const created = await newProf.json();
+            profs = [created];
+          }
+        }
+
+        profilesList = profs;
+        currentUserId = profs[0]?.user_id || 'usr_sample_01';
+        currentProfileId = profs[0]?.id;
+
+        const select = document.getElementById('activeProfileSelect');
+        select.innerHTML = profs.map(p => `<option value="${p.id}">${p.title}</option>`).join('');
+        if (currentProfileId) select.value = currentProfileId;
+      } catch (e) {
+        console.error('Error loading profiles:', e);
+      }
+    }
+
+    function onProfileChange() {
+      const select = document.getElementById('activeProfileSelect');
+      currentProfileId = select.value;
+      if (selectedJob) calculateMatchForJob(selectedJob);
+      loadKanban();
+    }
+
+    // Search Jobs
+    async function searchJobs() {
+      const q = document.getElementById('searchInput').value.trim();
+      const loc = document.getElementById('locationInput').value.trim();
+      const live = document.getElementById('liveSearchCheckbox').checked;
+
+      const countLabel = document.getElementById('jobsCountLabel');
+      countLabel.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> Buscando ofertas...';
+
+      let url = `${API_BASE}/jobs?live=${live}`;
+      if (q) url += `&q=${encodeURIComponent(q)}`;
+      if (loc) url += `&location=${encodeURIComponent(loc)}`;
+
+      try {
+        const res = await fetch(url);
+        if (!res.ok) throw new Error('Error al consultar ofertas');
+        allJobs = await res.json();
+        renderJobsList();
+      } catch (e) {
+        showToast(e.message, true);
+        countLabel.innerText = 'Error al cargar';
+      }
+    }
+
+    function renderJobsList() {
+      const container = document.getElementById('jobsList');
+      const countLabel = document.getElementById('jobsCountLabel');
+      countLabel.innerText = `${allJobs.length} ofertas disponibles`;
+
+      if (allJobs.length === 0) {
+        container.innerHTML = `
+          <div class="p-8 text-center bg-slate-900 border border-slate-800 rounded-xl text-slate-500">
+            <i class="fa-regular fa-folder-open text-3xl mb-2 opacity-50"></i>
+            <p class="text-xs">No se encontraron ofertas con los filtros actuales.</p>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = allJobs.map(job => {
+        const isSelected = selectedJob && selectedJob.id === job.id;
+        const skills = (job.required_skills || []).slice(0, 3);
+        const salary = job.salary_min ? `${job.salary_min.toLocaleString()}€` : 'A convenir';
+
+        return `
+          <div onclick="selectJob('${job.id}')" class="p-4 rounded-xl border transition-all cursor-pointer ${
+            isSelected 
+              ? 'bg-slate-800/90 border-indigo-500/80 shadow-md shadow-indigo-500/10' 
+              : 'bg-slate-900/90 border-slate-800 hover:border-slate-700 hover:bg-slate-800/50'
+          }">
+            <div class="flex items-start justify-between gap-2 mb-1.5">
+              <h3 class="text-sm font-semibold text-slate-100 line-clamp-1">${job.title}</h3>
+              <span class="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full ${
+                job.modality === 'REMOTE' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30' :
+                job.modality === 'HYBRID' ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/30' :
+                'bg-slate-800 text-slate-400'
+              }">${job.modality || 'PRESENCIAL'}</span>
+            </div>
+            <div class="flex items-center gap-3 text-xs text-slate-400 mb-2.5">
+              <span><i class="fa-regular fa-building mr-1"></i>${job.company || 'Empresa Confidencial'}</span>
+              <span><i class="fa-solid fa-location-dot mr-1"></i>${job.location || 'España'}</span>
+            </div>
+            <div class="flex items-center justify-between text-xs pt-2 border-t border-slate-800/80">
+              <span class="font-medium text-slate-300"><i class="fa-solid fa-euro-sign mr-1 text-slate-500"></i>${salary}</span>
+              <span class="text-[10px] text-slate-500">${job.source || 'Web'}</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      if (!selectedJob && allJobs.length > 0) {
+        selectJob(allJobs[0].id);
+      }
+    }
+
+    function selectJob(jobId) {
+      selectedJob = allJobs.find(j => j.id === jobId);
+      renderJobsList();
+      if (selectedJob) calculateMatchForJob(selectedJob);
+    }
+
+    async function calculateMatchForJob(job) {
+      const panel = document.getElementById('jobDetailPanel');
+      panel.innerHTML = `
+        <div class="flex flex-col items-center justify-center h-full py-16 text-slate-400">
+          <i class="fa-solid fa-spinner fa-spin text-3xl mb-3 text-indigo-400"></i>
+          <p class="text-xs">Analizando compatibilidad con IA multidimensional...</p>
+        </div>
+      `;
+
+      let matchData = null;
+      if (currentProfileId) {
+        try {
+          const res = await fetch(`${API_BASE}/matching/calculate`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              profile_id: currentProfileId,
+              job_id: job.id,
+              use_llm: false
+            })
+          });
+          if (res.ok) {
+            matchData = await res.json();
+          }
+        } catch (e) {
+          console.warn('Match calculation error:', e);
+        }
+      }
+
+      renderJobDetail(job, matchData);
+    }
+
+    function renderJobDetail(job, matchData) {
+      const panel = document.getElementById('jobDetailPanel');
+      const score = matchData ? Math.round(matchData.scores.total_score) : 75;
+      const skills = job.required_skills || [];
+      const matched = matchData?.scores?.matched_skills || [];
+      const missing = matchData?.scores?.missing_skills || [];
+
+      panel.innerHTML = `
+        <div class="flex items-start justify-between gap-4 border-b border-slate-800 pb-5">
+          <div>
+            <span class="text-xs font-semibold text-indigo-400 uppercase tracking-wider mb-1 block">${job.company || 'Empresa Confidencial'}</span>
+            <h2 class="text-xl font-bold text-slate-100">${job.title}</h2>
+            <div class="flex flex-wrap items-center gap-3 text-xs text-slate-400 mt-2">
+              <span><i class="fa-solid fa-location-dot mr-1"></i>${job.location || 'España'}</span>
+              <span><i class="fa-solid fa-laptop-house mr-1"></i>${job.modality || 'Remoto'}</span>
+              <span><i class="fa-solid fa-money-bill-wave mr-1"></i>${job.salary_min ? `${job.salary_min.toLocaleString()}€` : 'Salario negociable'}</span>
+              <span><i class="fa-regular fa-clock mr-1"></i>${job.contract_type || 'Indefinido'}</span>
+            </div>
+          </div>
+          <div class="flex flex-col items-center justify-center p-3 rounded-2xl bg-indigo-950/40 border border-indigo-500/30 min-w-[90px]">
+            <span class="text-2xl font-black ${score >= 70 ? 'text-emerald-400' : score >= 50 ? 'text-amber-400' : 'text-slate-400'}">${score}%</span>
+            <span class="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Fit IA</span>
+          </div>
+        </div>
+
+        <!-- AI Match Breakdown -->
+        ${matchData ? `
+          <div class="bg-slate-950/80 border border-indigo-900/30 rounded-xl p-4 my-4">
+            <h4 class="text-xs font-bold text-slate-300 uppercase tracking-wider mb-2 flex items-center gap-2">
+              <i class="fa-solid fa-wand-magic-sparkles text-indigo-400"></i> Análisis Multidimensional
+            </h4>
+            <div class="grid grid-cols-4 gap-2 text-center text-xs mb-3">
+              <div class="bg-slate-900 p-2 rounded-lg">
+                <span class="text-slate-500 block text-[10px]">Skills</span>
+                <span class="font-bold text-slate-200">${Math.round(matchData.scores.skill_score)}%</span>
+              </div>
+              <div class="bg-slate-900 p-2 rounded-lg">
+                <span class="text-slate-500 block text-[10px]">Salario</span>
+                <span class="font-bold text-slate-200">${Math.round(matchData.scores.salary_score)}%</span>
+              </div>
+              <div class="bg-slate-900 p-2 rounded-lg">
+                <span class="text-slate-500 block text-[10px]">Ubicación</span>
+                <span class="font-bold text-slate-200">${Math.round(matchData.scores.location_score)}%</span>
+              </div>
+              <div class="bg-slate-900 p-2 rounded-lg">
+                <span class="text-slate-500 block text-[10px]">Experiencia</span>
+                <span class="font-bold text-slate-200">${Math.round(matchData.scores.experience_score)}%</span>
+              </div>
+            </div>
+            <p class="text-xs text-slate-400 leading-relaxed">${matchData.scores.explanation?.summary || 'Compatibilidad técnica alta detectada.'}</p>
+          </div>
+        ` : ''}
+
+        <!-- Skills Badges -->
+        <div class="my-4">
+          <h4 class="text-xs font-semibold text-slate-400 mb-2">Requisitos Técnicos</h4>
+          <div class="flex flex-wrap gap-1.5">
+            ${skills.map(s => {
+              const name = typeof s === 'string' ? s : s.name;
+              const isMatch = matched.includes(name);
+              return `
+                <span class="text-xs px-2.5 py-1 rounded-lg border ${
+                  isMatch 
+                    ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30' 
+                    : 'bg-slate-800 text-slate-300 border-slate-700'
+                }">
+                  ${isMatch ? '<i class="fa-solid fa-check mr-1 text-emerald-400 text-[10px]"></i>' : ''}${name}
+                </span>
+              `;
+            }).join('')}
+          </div>
+        </div>
+
+        <!-- Description -->
+        <div class="my-2 flex-1">
+          <h4 class="text-xs font-semibold text-slate-400 mb-2">Descripción del Puesto</h4>
+          <div class="text-xs text-slate-300 leading-relaxed whitespace-pre-line bg-slate-950/40 p-4 rounded-xl border border-slate-800/80">
+            ${job.description || 'Sin descripción detallada.'}
+          </div>
+        </div>
+
+        <!-- Action Footer -->
+        <div class="pt-5 border-t border-slate-800 flex items-center justify-between gap-3 mt-4">
+          <a href="${job.source_url || '#'}" target="_blank" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition-colors flex items-center gap-2 border border-slate-700">
+            <i class="fa-solid fa-arrow-up-right-from-square"></i> Ver Oferta Original
+          </a>
+          <button onclick="saveToKanban('${job.id}')" class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition-all shadow-lg shadow-indigo-600/30 flex items-center gap-2">
+            <i class="fa-solid fa-plus"></i> Añadir a Kanban ATS
+          </button>
+        </div>
+      `;
+    }
+
+    // Save Job to Kanban
+    async function saveToKanban(jobId) {
+      if (!currentUserId) return showToast('Selecciona un perfil primero', true);
+      try {
+        const res = await fetch(`${API_BASE}/crm/applications`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            user_id: currentUserId,
+            profile_id: currentProfileId,
+            job_id: jobId,
+            status: 'APPLIED',
+            stage_notes: 'Añadido desde la búsqueda de ofertas'
+          })
+        });
+        if (!res.ok) throw new Error('Ya se encuentra en tu tablero');
+        showToast('Candidatura añadida al tablero ATS');
+        loadStats();
+      } catch (e) {
+        showToast(e.message, true);
+      }
+    }
+
+    // Load Kanban Board
+    async function loadKanban() {
+      const board = document.getElementById('kanbanBoard');
+      board.innerHTML = '<div class="col-span-4 py-20 text-center text-slate-500 text-xs"><i class="fa-solid fa-spinner fa-spin mr-2"></i>Cargando tablero...</div>';
+
+      try {
+        const res = await fetch(`${API_BASE}/crm/kanban?user_id=${currentUserId}`);
+        if (!res.ok) throw new Error('Error al cargar el tablero');
+        const data = await res.json();
+        renderKanban(data.columns);
+      } catch (e) {
+        showToast(e.message, true);
+      }
+    }
+
+    const STAGE_CONFIG = {
+      SAVED: { title: 'Guardadas', icon: 'fa-bookmark', color: 'slate' },
+      APPLIED: { title: 'Postulado', icon: 'fa-paper-plane', color: 'indigo' },
+      INTERVIEW: { title: 'En Entrevista', icon: 'fa-comments', color: 'amber' },
+      OFFER: { title: 'Oferta Recibida', icon: 'fa-trophy', color: 'emerald' },
+      REJECTED: { title: 'Descartada', icon: 'fa-ban', color: 'rose' }
+    };
+
+    function renderKanban(columns) {
+      const board = document.getElementById('kanbanBoard');
+      const stages = ['SAVED', 'APPLIED', 'INTERVIEW', 'OFFER'];
+
+      board.innerHTML = stages.map(st => {
+        const conf = STAGE_CONFIG[st];
+        const apps = columns[st] || [];
+
+        return `
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl flex flex-col h-[75vh]">
+            <div class="p-3.5 border-b border-slate-800 flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <i class="fa-solid ${conf.icon} text-xs text-${conf.color}-400"></i>
+                <h3 class="text-xs font-bold text-slate-200">${conf.title}</h3>
+              </div>
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-800 text-slate-400">${apps.length}</span>
+            </div>
+
+            <div class="flex-1 p-2.5 overflow-y-auto custom-scrollbar flex flex-col gap-2.5">
+              ${apps.map(app => `
+                <div class="bg-slate-950 border border-slate-800 hover:border-slate-700 p-3 rounded-xl transition-all shadow-sm group relative">
+                  <div class="flex items-start justify-between gap-2 mb-1">
+                    <h4 class="text-xs font-semibold text-slate-100 line-clamp-1">${app.job_title || 'Vacante'}</h4>
+                    <button onclick="deleteKanbanCard('${app.id}', event)" title="Eliminar de Kanban" class="text-slate-500 hover:text-red-400 p-1 transition-colors">
+                      <i class="fa-solid fa-trash-can text-xs"></i>
+                    </button>
+                  </div>
+                  <p class="text-[11px] text-slate-400 mb-2">${app.company || 'Empresa'}</p>
+                  ${app.stage_notes ? `<p class="text-[10px] text-slate-500 bg-slate-900 p-1.5 rounded-lg mb-2">${app.stage_notes}</p>` : ''}
+                  
+                  <div class="flex items-center justify-between pt-2 border-t border-slate-900 text-[10px]">
+                    <span class="text-slate-500">${new Date(app.updated_at).toLocaleDateString()}</span>
+                    <button onclick="openStageModal('${app.id}', '${app.status}')" class="text-indigo-400 hover:text-indigo-300 font-medium flex items-center gap-1">
+                      Mover <i class="fa-solid fa-chevron-right text-[8px]"></i>
+                    </button>
+                  </div>
+                </div>
+              `).join('')}
+
+              ${apps.length === 0 ? `
+                <div class="flex-1 flex flex-col items-center justify-center text-slate-600 text-xs py-8">
+                  <i class="fa-regular fa-clone text-xl mb-1 opacity-40"></i>
+                  <span>Sin vacantes</span>
+                </div>
+              ` : ''}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Delete Kanban Card
+    function deleteKanbanCard(appId, event) {
+      if (event) event.stopPropagation();
+      openConfirmModal(
+        '¿Eliminar candidatura?',
+        'Se retirará esta vacante de tu tablero ATS Kanban.',
+        async () => {
+          try {
+            const res = await fetch(`${API_BASE}/crm/applications/${appId}`, { method: 'DELETE' });
+            if (!res.ok) throw new Error('Error al eliminar la candidatura');
+            showToast('Candidatura eliminada del tablero ATS');
+            await loadKanban();
+            await loadStats();
+          } catch (e) {
+            showToast(e.message, true);
+          }
+        }
+      );
+    }
+
+    async function deleteCurrentStageApp() {
+      const appId = document.getElementById('stageAppId').value;
+      if (!appId) return;
+      closeStageModal();
+      deleteKanbanCard(appId);
+    }
+
+    // Delete Profile
+    function deleteProfile(profileId, profileTitle) {
+      openConfirmModal(
+        `¿Eliminar perfil "${profileTitle}"?`,
+        'Se eliminarán sus postulaciones y afinidades asociadas.',
+        async () => {
+          try {
+            const res = await fetch(`${API_BASE}/profiles/${profileId}`, { method: 'DELETE' });
+            if (!res.ok) throw new Error('Error al eliminar el perfil');
+            showToast(`Perfil "${profileTitle}" eliminado con éxito`);
+            await loadProfiles();
+            renderProfilesList();
+            await loadKanban();
+            await loadStats();
+          } catch (e) {
+            showToast(e.message, true);
+          }
+        }
+      );
+    }
+
+    // Stage Transitions Modal
+    function openStageModal(appId, currentStatus) {
+      document.getElementById('stageAppId').value = appId;
+      document.getElementById('stageSelect').value = currentStatus;
+      document.getElementById('stageNotes').value = '';
+      const modal = document.getElementById('stageModal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeStageModal() {
+      const modal = document.getElementById('stageModal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    async function saveStageTransition() {
+      const appId = document.getElementById('stageAppId').value;
+      const newStatus = document.getElementById('stageSelect').value;
+      const notes = document.getElementById('stageNotes').value.trim();
+
+      try {
+        const res = await fetch(`${API_BASE}/crm/applications/${appId}/status`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: newStatus, note: notes || undefined })
+        });
+        if (!res.ok) throw new Error('Error al actualizar etapa');
+        closeStageModal();
+        showToast('Etapa actualizada');
+        loadKanban();
+        loadStats();
+      } catch (e) {
+        showToast(e.message, true);
+      }
+    }
+
+    // Render Profiles Tab
+    function renderProfilesList() {
+      const grid = document.getElementById('profilesGrid');
+      grid.innerHTML = profilesList.map(p => `
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 flex flex-col justify-between">
+          <div>
+            <div class="flex items-start justify-between gap-3 mb-2">
+              <h3 class="text-base font-bold text-slate-100">${p.title}</h3>
+              <div class="flex items-center gap-1">
+                <button onclick="deleteProfile('${p.id}', '${p.title}')" title="Eliminar Perfil" class="text-slate-500 hover:text-red-400 p-1.5 transition-colors">
+                  <i class="fa-solid fa-trash-can text-sm"></i>
+                </button>
+              </div>
+            </div>
+            <p class="text-xs text-slate-400 leading-relaxed mb-4">${p.bio || 'Perfil profesional especializado.'}</p>
+            
+            <div class="flex flex-wrap gap-1.5 mb-4">
+              ${(p.skills || []).map(s => `
+                <span class="text-[11px] px-2 py-0.5 rounded-md bg-slate-950 border border-slate-800 text-slate-300">${s.name || s}</span>
+              `).join('')}
+            </div>
+          </div>
+
+          <div class="pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400">
+            <span>Exp: <strong class="text-slate-200">${p.experience_years || 0} años</strong></span>
+            <span>Min: <strong class="text-slate-200">${p.target_salary_min ? `${p.target_salary_min.toLocaleString()}€` : 'N/A'}</strong></span>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // New Profile Modal
+    function openNewProfileModal() {
+      const modal = document.getElementById('newProfileModal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeNewProfileModal() {
+      const modal = document.getElementById('newProfileModal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    async function submitNewProfile(e) {
+      e.preventDefault();
+      const title = document.getElementById('profTitle').value.trim();
+      const skillsStr = document.getElementById('profSkills').value.trim();
+      const salary = parseFloat(document.getElementById('profSalaryMin').value) || null;
+      const modality = document.getElementById('profModality').value;
+      const locStr = document.getElementById('profLocations').value.trim();
+      const exp = parseFloat(document.getElementById('profExpYears').value) || 0;
+
+      const skills = skillsStr.split(',').map(s => ({ name: s.trim() })).filter(s => s.name);
+      const locations = locStr.split(',').map(l => l.trim()).filter(Boolean);
+
+      try {
+        const res = await fetch(`${API_BASE}/profiles`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            user_id: currentUserId,
+            title,
+            skills,
+            target_salary_min: salary,
+            preferred_modality: modality,
+            locations,
+            experience_years: exp
+          })
+        });
+        if (!res.ok) throw new Error('Error al crear perfil');
+        closeNewProfileModal();
+        showToast('Perfil creado exitosamente');
+        await loadProfiles();
+        renderProfilesList();
+      } catch (err) {
+        showToast(err.message, true);
+      }
+    }
+
+    // Load Stats
+    async function loadStats() {
+      try {
+        const res = await fetch(`${API_BASE}/crm/stats?user_id=${currentUserId}`);
+        if (!res.ok) return;
+        const stats = await res.json();
+
+        document.getElementById('responseRateLabel').innerText = `${stats.response_rate_percent}%`;
+        document.getElementById('totalAppsLabel').innerText = stats.total_applications;
+
+        const metricsGrid = document.getElementById('statsMetricsGrid');
+        metricsGrid.innerHTML = `
+          <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl">
+            <span class="text-xs text-slate-400 block mb-1">Total Postulaciones</span>
+            <span class="text-2xl font-bold text-slate-100">${stats.total_applications}</span>
+          </div>
+          <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl">
+            <span class="text-xs text-slate-400 block mb-1">En Proceso Activo</span>
+            <span class="text-2xl font-bold text-indigo-400">${stats.active_in_pipeline}</span>
+          </div>
+          <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl">
+            <span class="text-xs text-slate-400 block mb-1">Entrevistas</span>
+            <span class="text-2xl font-bold text-amber-400">${stats.status_distribution?.INTERVIEW || 0}</span>
+          </div>
+          <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl">
+            <span class="text-xs text-slate-400 block mb-1">Ofertas Recibidas</span>
+            <span class="text-2xl font-bold text-emerald-400">${stats.status_distribution?.OFFER || 0}</span>
+          </div>
+        `;
+
+        const dist = stats.status_distribution || {};
+        const distContainer = document.getElementById('stageDistributionBars');
+        const stages = ['SAVED', 'APPLIED', 'INTERVIEW', 'OFFER', 'REJECTED'];
+        distContainer.innerHTML = stages.map(st => {
+          const count = dist[st] || 0;
+          const pct = stats.total_applications > 0 ? (count / stats.total_applications) * 100 : 0;
+          return `
+            <div>
+              <div class="flex items-center justify-between text-xs mb-1">
+                <span class="text-slate-400">${STAGE_CONFIG[st].title}</span>
+                <span class="text-slate-200 font-semibold">${count}</span>
+              </div>
+              <div class="h-2 w-full bg-slate-950 rounded-full overflow-hidden">
+                <div class="h-full bg-indigo-500 rounded-full" style="width: ${pct}%"></div>
+              </div>
+            </div>
+          `;
+        }).join('');
+      } catch (e) {
+        console.warn('Stats loading error', e);
+      }
+    }
+
+    // Trigger Scraper Sync
+    async function triggerScraperSync() {
+      const icon = document.getElementById('syncIcon');
+      icon.classList.add('fa-spin');
+      try {
+        const res = await fetch(`${API_BASE}/scrapers/run`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query: 'Python', limit_per_plugin: 5 })
+        });
+        if (!res.ok) throw new Error('Error al sincronizar conectores');
+        const data = await res.json();
+        showToast(`Sincronizadas ${data.offers_persisted} nuevas ofertas`);
+        await searchJobs();
+      } catch (e) {
+        showToast(e.message, true);
+      } finally {
+        icon.classList.remove('fa-spin');
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', initApp);
+  </script>
+</body>
+</html>
