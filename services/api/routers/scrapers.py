@@ -7,6 +7,7 @@ from services.scraper_service.manager import ScraperManager
 from services.scraper_service.plugins.infojobs_plugin import InfoJobsPlugin
 from services.scraper_service.plugins.sepe_plugin import SEPEPlugin
 from services.scraper_service.plugins.madrid_plugin import MadridEmpleoPlugin
+from services.scraper_service.plugins.live_aggregator_plugin import LiveWebAggregatorPlugin
 from services.api.schemas import (
     ScraperPluginResponse,
     ScraperTriggerRequest,
@@ -15,11 +16,12 @@ from services.api.schemas import (
 
 router = APIRouter(prefix="/scrapers", tags=["Scrapers & Conectores"])
 
-# Global scraper manager singleton with Spain connectors
+# Global scraper manager singleton with Spain connectors and Live Aggregator
 scraper_mgr = ScraperManager()
 scraper_mgr.register_plugin(InfoJobsPlugin())
 scraper_mgr.register_plugin(SEPEPlugin())
 scraper_mgr.register_plugin(MadridEmpleoPlugin())
+scraper_mgr.register_plugin(LiveWebAggregatorPlugin())
 
 
 @router.get("/plugins", response_model=List[ScraperPluginResponse])
